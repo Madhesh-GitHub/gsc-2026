@@ -8,7 +8,6 @@ import RegisterPage from './pages/RegisterPage'
 import ApplyPage from './pages/ApplyPage'
 import TrackerPage from './pages/TrackerPage'
 import HRPage from './pages/HRPage'
-import DemoPage from './pages/DemoPage'
 import './App.css'
 
 function App() {
@@ -53,7 +52,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route path="/demo" element={<DemoPage />} />
           </Route>
         </Routes>
       </Router>

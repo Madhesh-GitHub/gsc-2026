@@ -74,6 +74,7 @@ class APIClient {
 
   // Candidate endpoints
   async submitApplication(data: {
+    job_id: string
     resume_url: string
     github_url?: string
     linkedin_url?: string
@@ -84,6 +85,22 @@ class APIClient {
 
   async getMyApplication() {
     const response = await this.client.get('/candidates/me')
+    return response.data
+  }
+
+  // Job endpoints
+  async createJob(data: { title: string; jd_text: string }) {
+    const response = await this.client.post('/jobs', data)
+    return response.data
+  }
+
+  async listJobs() {
+    const response = await this.client.get('/jobs')
+    return response.data
+  }
+
+  async getJobDetails(jobId: string) {
+    const response = await this.client.get(`/jobs/${jobId}`)
     return response.data
   }
 

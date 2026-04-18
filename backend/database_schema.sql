@@ -37,6 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at DESC);
 CREATE TABLE IF NOT EXISTS candidates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
     status VARCHAR(50) NOT NULL DEFAULT 'Reviewing' 
         CHECK (status IN ('Reviewing', 'Rejected', 'Blacklisted', 'Accepted', 'Human_Escalation')),
     resume_url TEXT,
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS candidates (
 );
 
 CREATE INDEX IF NOT EXISTS idx_candidates_user_id ON candidates(user_id);
+CREATE INDEX IF NOT EXISTS idx_candidates_job_id ON candidates(job_id);
 CREATE INDEX IF NOT EXISTS idx_candidates_status ON candidates(status);
 CREATE INDEX IF NOT EXISTS idx_candidates_created_at ON candidates(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_candidates_capability_score ON candidates(capability_score DESC);
@@ -138,4 +140,27 @@ CREATE POLICY candidates_own_data ON candidates
 CREATE POLICY recruiters_see_all ON candidates
     FOR SELECT USING (
         (SELECT role FROM users WHERE id = auth.uid()) IN ('recruiter', 'admin')
+    );
+
+-- RLS Policy: Authenticated users can insert their own applications
+CREATE POLICY candidates_insert_own ON candidates
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+
+-- RLS Policy: Service role (backend) can insert/update candidates
+CREATE POLICY service_role_all ON candidates
+    FOR ALL USING (auth.role() = 'service_role');
+
+-- RLS Policy: Recruiters can update candidate status
+CREATE POLICY recruiters_update ON candidates
+    FOR UPDATE USING (
+        (SELECT role FROM users WHERE id = auth.uid()) IN ('recruiter', 'admin')
+    );
+
+-- RLS Policies for candidate_proofs table
+CREATE POLICY proofs_service_role ON candidate_proofs
+    FOR ALL USING (auth.role() = 'service_role');
+
+CREATE POLICY proofs_users_see ON candidate_proofs
+    FOR SELECT USING (
+        candidate_id IN (SELECT id FROM candidates WHERE user_id = auth.uid())
     );

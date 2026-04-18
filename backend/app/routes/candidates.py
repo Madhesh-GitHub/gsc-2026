@@ -23,6 +23,7 @@ async def submit_application(
         candidate_data = {
             "id": candidate_id,
             "user_id": current_user["id"],
+            "job_id": request.job_id,
             "status": "Reviewing",
             "resume_url": request.resume_url,
             "github_url": request.github_url,
@@ -45,6 +46,7 @@ async def submit_application(
         return CandidateResponse(
             id=candidate["id"],
             user_id=candidate["user_id"],
+            job_id=candidate["job_id"],
             status=candidate["status"],
             resume_url=candidate["resume_url"],
             github_url=candidate["github_url"],
@@ -86,6 +88,7 @@ async def get_my_application(
         return CandidateDetailResponse(
             id=candidate["id"],
             user_id=candidate["user_id"],
+            job_id=candidate["job_id"],
             status=candidate["status"],
             resume_url=candidate["resume_url"],
             github_url=candidate["github_url"],
@@ -127,6 +130,7 @@ async def get_candidate_detail(
         return CandidateDetailResponse(
             id=candidate["id"],
             user_id=candidate["user_id"],
+            job_id=candidate["job_id"],
             status=candidate["status"],
             resume_url=candidate["resume_url"],
             github_url=candidate["github_url"],
@@ -168,6 +172,7 @@ async def list_candidates(
             candidates.append(CandidateResponse(
                 id=candidate["id"],
                 user_id=candidate["user_id"],
+                job_id=candidate["job_id"],
                 status=candidate["status"],
                 resume_url=candidate["resume_url"],
                 github_url=candidate["github_url"],

@@ -1,129 +1,284 @@
-import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import apiClient from '../utils/api'
+import { Plus, AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function HRPage() {
-  const [expandedJson, setExpandedJson] = useState(false)
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('jobs') // 'jobs' or 'candidates'
+  const [jobs, setJobs] = useState([])
+  const [candidates, setCandidates] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showJobForm, setShowJobForm] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const [jobForm, setJobForm] = useState({
+    title: '',
+    jd_text: '',
+  })
+
+  useEffect(() => {
+    loadData()
+  }, [activeTab])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      if (activeTab === 'jobs') {
+        const jobsList = await apiClient.listJobs()
+        setJobs(jobsList)
+      } else {
+        const candidatesList = await apiClient.listCandidates()
+        setCandidates(candidatesList)
+      }
+    } catch (err) {
+      setError('Failed to load data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleJobFormChange = (e) => {
+    const { name, value } = e.target
+    setJobForm(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handlePostJob = async (e) => {
+    e.preventDefault()
+
+    if (!jobForm.title.trim()) {
+      setError('Job title is required')
+      return
+    }
+
+    if (!jobForm.jd_text.trim()) {
+      setError('Job description is required')
+      return
+    }
+
+    setSubmitting(true)
+    setError('')
+
+    try {
+      const newJob = await apiClient.createJob({
+        title: jobForm.title,
+        jd_text: jobForm.jd_text,
+      })
+
+      setJobs([newJob, ...jobs])
+      setJobForm({ title: '', jd_text: '' })
+      setShowJobForm(false)
+      setSuccess('Job posted successfully!')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to post job')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Accepted':
+        return 'bg-green-100 text-green-800'
+      case 'Rejected':
+        return 'bg-red-100 text-red-800'
+      case 'Reviewing':
+        return 'bg-blue-100 text-blue-800'
+      case 'Human_Escalation':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-12">
-      <h1 className="text-4xl font-bold text-gray-900 mb-8">Recruiter Dashboard</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Pane - Action Buckets */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Action Buckets</h2>
-
-            {/* Priority Verified Bucket */}
-            <div className="mb-6">
-              <div
-                className="px-4 py-3 rounded-lg text-white font-medium mb-3"
-                style={{ backgroundColor: '#1a73e8' }}
-              >
-                Priority Verified
-              </div>
-              <div className="space-y-2">
-                <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
-                  <p className="font-medium text-gray-900">Alice Johnson</p>
-                  <p className="text-sm text-gray-600">Senior Engineer</p>
-                </div>
-                <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
-                  <p className="font-medium text-gray-900">Bob Chen</p>
-                  <p className="text-sm text-gray-600">Product Manager</p>
-                </div>
-              </div>
-            </div>
-
-            {/* High Capability / Unverified Bucket */}
-            <div>
-              <div className="px-4 py-3 rounded-lg text-white font-medium mb-3 bg-orange-500">
-                High Capability / Unverified
-              </div>
-              <div className="space-y-2">
-                <div className="bg-orange-50 px-4 py-3 rounded-lg border border-orange-200">
-                  <p className="font-medium text-gray-900">Carol Martinez</p>
-                  <p className="text-sm text-gray-600">Data Scientist</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">Recruiter Dashboard</h1>
+          {activeTab === 'jobs' && (
+            <button
+              onClick={() => setShowJobForm(!showJobForm)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all"
+              style={{ backgroundColor: '#1a73e8' }}
+            >
+              <Plus className="w-5 h-5" />
+              Post Job
+            </button>
+          )}
         </div>
 
-        {/* Right Pane - Metrics & Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Twin Dials */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Score Dials</h2>
-            <div className="grid grid-cols-2 gap-8">
-              {/* Capability Dial */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32 rounded-full border-8 border-green-500 flex items-center justify-center bg-green-50">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600">78</div>
-                    <p className="text-xs text-gray-600 mt-1">Capability</p>
-                  </div>
-                </div>
-              </div>
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('jobs')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'jobs'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Job Postings ({jobs.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('candidates')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'candidates'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Applications ({candidates.length})
+          </button>
+        </div>
 
-              {/* Verification Dial */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32 rounded-full border-8 border-purple-500 flex items-center justify-center bg-purple-50">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600">92</div>
-                    <p className="text-xs text-gray-600 mt-1">Verification</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 flex gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
           </div>
+        )}
 
-          {/* Gemini Summary */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="font-bold text-gray-900 mb-3">AI Summary (Gemini)</h3>
-            <p className="text-gray-700 leading-relaxed">
-              Alice brings 8 years of backend engineering expertise with proven success
-              in scalable systems. GitHub shows consistent contributions and strong open-source involvement.
-            </p>
+        {/* Success Message */}
+        {success && (
+          <div className="mb-6 flex gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-green-700">{success}</p>
           </div>
+        )}
 
-          {/* JSON Viewer */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <button
-              onClick={() => setExpandedJson(!expandedJson)}
-              className="w-full px-6 py-4 font-bold text-gray-900 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-            >
-              <ChevronDown
-                size={20}
-                className={`transition-transform ${expandedJson ? 'rotate-180' : ''}`}
-              />
-              Decision Matrix & GitHub Forensics
-            </button>
-            {expandedJson && (
-              <div className="px-6 pb-6 border-t border-gray-200 bg-gray-50 font-mono text-xs overflow-auto max-h-64">
-                <pre className="text-gray-700">
-                  {JSON.stringify(
-                    {
-                      decisionMatrix: {
-                        technicalScore: 85,
-                        experienceScore: 78,
-                        cultureFit: 88,
-                      },
-                      githubForensics: {
-                        commits: 1240,
-                        repositories: 34,
-                        stars: 156,
-                        followers: 42,
-                        topLanguages: ['JavaScript', 'Python', 'Go'],
-                      },
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
+        {/* Job Form */}
+        {showJobForm && activeTab === 'jobs' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Post New Job</h2>
+            <form onSubmit={handlePostJob} className="space-y-6">
+              <div>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 mb-2 block">Job Title *</span>
+                  <input
+                    type="text"
+                    name="title"
+                    value={jobForm.title}
+                    onChange={handleJobFormChange}
+                    placeholder="e.g., Senior Software Engineer"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </label>
               </div>
+
+              <div>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 mb-2 block">Job Description *</span>
+                  <textarea
+                    name="jd_text"
+                    value={jobForm.jd_text}
+                    onChange={handleJobFormChange}
+                    placeholder="Enter detailed job description, requirements, responsibilities..."
+                    rows="6"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </label>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2 rounded-lg text-white font-medium transition-all"
+                  style={{
+                    backgroundColor: submitting ? '#ccc' : '#1a73e8',
+                    cursor: submitting ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {submitting ? 'Posting...' : 'Post Job'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowJobForm(false)
+                    setJobForm({ title: '', jd_text: '' })
+                  }}
+                  className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-gray-600">Loading...</div>
+          </div>
+        ) : activeTab === 'jobs' ? (
+          // Jobs List
+          <div className="space-y-4">
+            {jobs.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <p className="text-gray-600 mb-4">No job postings yet</p>
+                <button
+                  onClick={() => setShowJobForm(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium"
+                  style={{ backgroundColor: '#1a73e8' }}
+                >
+                  <Plus className="w-5 h-5" />
+                  Create First Job
+                </button>
+              </div>
+            ) : (
+              jobs.map(job => (
+                <div key={job.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{job.title}</h3>
+                  <p className="text-gray-600 mb-4">{job.jd_text}</p>
+                  <p className="text-sm text-gray-500">
+                    Posted {new Date(job.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))
             )}
           </div>
-        </div>
+        ) : (
+          // Candidates List
+          <div className="space-y-4">
+            {candidates.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <p className="text-gray-600">No applications yet</p>
+              </div>
+            ) : (
+              candidates.map(candidate => (
+                <div key={candidate.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Application #{candidate.id.slice(0, 8)}</h3>
+                      <p className="text-gray-600 mt-1">Resume: {candidate.resume_url}</p>
+                      {candidate.github_url && (
+                        <p className="text-gray-600">GitHub: {candidate.github_url}</p>
+                      )}
+                      {candidate.linkedin_url && (
+                        <p className="text-gray-600">LinkedIn: {candidate.linkedin_url}</p>
+                      )}
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(candidate.status)}`}>
+                      {candidate.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-4">
+                    Applied {new Date(candidate.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

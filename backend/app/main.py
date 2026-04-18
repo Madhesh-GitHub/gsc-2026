@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.utils.supabase_client import SupabaseClient
-from app.routes import auth, candidates, proofs
+from app.routes import auth, candidates, proofs, jobs
 from app.middleware.auth import security
 
 # Initialize FastAPI app
@@ -46,6 +46,7 @@ async def health_check():
 app.include_router(auth.router)
 app.include_router(candidates.router)
 app.include_router(proofs.router)
+app.include_router(jobs.router)
 
 # Root endpoint
 @app.get("/")

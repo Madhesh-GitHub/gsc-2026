@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
 # ==================== Candidate Schemas ====================
 
 class CandidateCreateRequest(BaseModel):
+    job_id: str
     resume_url: str
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
@@ -42,6 +43,7 @@ class CandidateCreateRequest(BaseModel):
 class CandidateResponse(BaseModel):
     id: str
     user_id: str
+    job_id: str
     status: str
     resume_url: str
     github_url: Optional[str]
@@ -65,6 +67,16 @@ class JobCreateRequest(BaseModel):
     jd_text: str
 
 class JobResponse(BaseModel):
+    id: str
+    title: str
+    jd_text: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class JobListResponse(BaseModel):
     id: str
     title: str
     jd_text: str

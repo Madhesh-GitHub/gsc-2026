@@ -13,7 +13,6 @@ export default function TopNavigation() {
     { path: '/apply', label: 'Apply', roles: ['candidate'] },
     { path: '/tracker', label: 'Tracker', roles: ['candidate'] },
     { path: '/hr', label: 'HR Dashboard', roles: ['recruiter'] },
-    { path: '/demo', label: 'A/B Bias Prover', roles: [] },
   ]
 
   const visibleLinks = navLinks.filter(
